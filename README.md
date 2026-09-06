@@ -64,27 +64,27 @@ supply_chain_ai_copilot/
         KPI calculations              Document generation
               │                               │
               ▼                         ┌─────┴─────┐
-        ui/charts.py                     │           │
+        ui/charts.py                    │           │
               │                       BM25       Embeddings
               │                     Retrieval    + Pinecone
-              │                       │           │
-              │                       └─────┬─────┘
-              │                             │
-              │                        RRF Fusion
-              │                             │
-              │                       CrossEncoder
-              │                         Reranking
-              │                             │
-              └──────────────┐              ▼
-                             │        Relevant Context
-                             │              │
-                             │              ▼
-                             │          Groq LLM
-                             │              │
-                             └──────► Grounded Answer
-                                            │
-                                            ▼
-                                     Streamlit Chat
+              │                         │           │
+              │                         └─────┬─────┘
+              │                               │
+              │                          RRF Fusion
+              │                               │
+              │                         CrossEncoder
+              │                          Reranking
+              │                               │
+              └──────────────┐                ▼
+                             │          Relevant Context
+                             │                │
+                             │                ▼
+                             │            Groq LLM
+                             │                │
+                             └──────►   Grounded Answer
+                                              │
+                                              ▼
+                                       Streamlit Chat
 ```
 
 ---
