@@ -1,17 +1,19 @@
 # ⛓ Supply Chain AI Copilot
 
-> Intelligent logistics analytics using RAG · LLaMA 3 70B (Groq) · FAISS · Streamlit
+> Intelligent logistics analytics using Hybrid RAG · BM25 · Pinecone · CrossEncoder Reranking · Groq LLM · Streamlit
 
 ---
 
 ## Project Overview
 
 Supply Chain AI Copilot transforms raw logistics CSV data into actionable intelligence.
-Users ask natural-language questions; the system retrieves relevant analytics from a FAISS
-vector index and passes them as context to a Groq-hosted LLaMA 3 70B model for accurate,
-data-grounded answers.
+
+Users ask natural-language questions about orders, warehouses, products, destinations, shipping delays, and logistics performance. The system combines lexical and semantic retrieval to identify relevant analytics from the dataset, reranks the retrieved results, and passes the most relevant context to a Groq-hosted large language model for data-grounded answers.
+
+The application also provides interactive analytics, charts, and a filterable data explorer through a Streamlit interface.
 
 ---
+
 
 ## Architecture
 
@@ -48,25 +50,41 @@ supply_chain_ai_copilot/
 ### Data flow
 
 ```
-CSV  →  data_processing.py  →  clean DataFrame + delay_days
-                                     │
-                    ┌────────────────┴──────────────────┐
-                    ▼                                   ▼
-              analytics.py                       rag_engine.py
-           (KPI DataFrames)                  build_documents()
-                    │                               │
-              ui/charts.py               SentenceTransformer embed
-           (Plotly Figures)              FAISS IndexFlatIP store
-                    │                               │
-                    └──────── app.py / pages ───────┘
-                                     │
-                              User question
-                                     │
-                          rag_engine.retrieve()  ← top-k chunks
-                                     │
-                            Groq API (LLaMA 3)
-                                     │
-                             Answer rendered in chat
+                         CSV Dataset
+                              │
+                              ▼
+                    data_processing.py
+                              │
+                     Clean DataFrame
+                              │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+        analytics.py                     rag_engine.py
+              │                               │
+        KPI calculations              Document generation
+              │                               │
+              ▼                         ┌─────┴─────┐
+        ui/charts.py                     │           │
+              │                       BM25       Embeddings
+              │                     Retrieval    + Pinecone
+              │                       │           │
+              │                       └─────┬─────┘
+              │                             │
+              │                        RRF Fusion
+              │                             │
+              │                       CrossEncoder
+              │                         Reranking
+              │                             │
+              └──────────────┐              ▼
+                             │        Relevant Context
+                             │              │
+                             │              ▼
+                             │          Groq LLM
+                             │              │
+                             └──────► Grounded Answer
+                                            │
+                                            ▼
+                                     Streamlit Chat
 ```
 
 ---
@@ -108,10 +126,67 @@ GROQ_API_KEY=gsk_your_key_here
 Optional overrides (all have sensible defaults):
 
 ```dotenv
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=openai/gpt-oss-20b
 EMBEDDING_MODEL=all-MiniLM-L6-v2
 RAG_TOP_K=6
 DELAY_THRESHOLD_DAYS=3
+```
+
+```Structure
+# ============================================================
+# Groq
+# ============================================================
+
+GROQ_API_KEY=gsk_****************************************************
+GROQ_MODEL=open**************
+
+LLM_MAX_TOKENS=2048
+LLM_TEMPERATURE=0.0
+
+
+# ============================================================
+# Embeddings
+# ============================================================
+
+EMBEDDING_MODEL=all-************
+
+
+# ============================================================
+# Pinecone
+# ============================================================
+
+PINECONE_API_KEY=pcsk***********************************************************************
+PINECONE_INDEX_NAME=supp****************
+PINECONE_CLOUD=aws
+PINECONE_REGION=us-e*****
+PINECONE_NAMESPACE=supp********
+
+
+# ============================================================
+# Retrieval
+# ============================================================
+
+BM25_TOP_K=20
+SEMANTIC_TOP_K=20
+RERANK_TOP_K=8
+RAG_TOP_K=6
+
+RRF_K=60
+
+
+# ============================================================
+# Reranker
+# ============================================================
+
+RERANKER_MODEL=cros*******************************
+
+
+# ============================================================
+# Analytics
+# ============================================================
+
+DELAY_THRESHOLD_DAYS=3
+TOP_DESTINATIONS_N=10
 ```
 
 ### 5. Run
@@ -140,22 +215,30 @@ Open `http://localhost:8501`.
 
 ## Tech Stack
 
-| Component | Technology |
-|---|---|
-| UI | Streamlit |
-| Data | Pandas |
-| Charts | Plotly |
-| Embeddings | `all-MiniLM-L6-v2` (sentence-transformers) |
-| Vector store | FAISS (CPU) |
-| LLM | Groq · `llama-3.3-70b-versatile` |
-| Config | python-dotenv |
+| Component          | Technology                      |
+| ------------------ | ------------------------------- |
+| UI                 | Streamlit                       |
+| Data Processing    | Pandas                          |
+| Visualization      | Plotly                          |
+| Lexical Retrieval  | BM25                            |
+| Semantic Retrieval | SentenceTransformers + Pinecone |
+| Retrieval Fusion   | Reciprocal Rank Fusion (RRF)    |
+| Reranking          | CrossEncoder                    |
+| LLM                | Groq · `openai/gpt-oss-20b`     |
+| Configuration      | python-dotenv                   |
+| RAG Evaluation     | RAGAS                           |
+
 
 ---
 
 ## Limitations
 
-- AI chat requires a valid `GROQ_API_KEY` in `.env`.
-- The RAG pipeline retrieves top-6 chunks; edge-case facts may be missed on very large datasets.
-- Uploaded CSVs must include: `Order_ID`, `Warehouse`, `Product`, `Order_Date`, `Ship_Date`, `Destination`.
-- Chat history resets on page refresh (Streamlit session state).
-- First run downloads the `all-MiniLM-L6-v2` model (~80 MB).
+-AI chat requires a valid Groq API key.
+-Semantic retrieval requires a configured Pinecone index.
+-Retrieval quality depends on the quality and structure of the generated analytical documents.
+-Edge-case facts may be missed when the relevant information is not present in the retrieved context.
+-Uploaded CSV files must contain the required logistics columns.
+-Chat history is stored in Streamlit session state and resets when the session is refreshed.
+-The first run downloads the SentenceTransformer embedding model.
+-LLM responses depend on the quality of the retrieved context.
+-RAGAS scores depend on the quality and representativeness of the evaluation dataset.

@@ -72,7 +72,7 @@ def _color_delay(val):
 
 
 st.dataframe(
-    filtered.style.applymap(_color_delay, subset=["shipping_delay"]),
+    filtered.style.map(_color_delay, subset=["shipping_delay"]),
     use_container_width=True,
     height=480,
 )
