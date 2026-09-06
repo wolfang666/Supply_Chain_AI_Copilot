@@ -233,12 +233,12 @@ Open `http://localhost:8501`.
 
 ## Limitations
 
--AI chat requires a valid Groq API key.
--Semantic retrieval requires a configured Pinecone index.
--Retrieval quality depends on the quality and structure of the generated analytical documents.
--Edge-case facts may be missed when the relevant information is not present in the retrieved context.
--Uploaded CSV files must contain the required logistics columns.
--Chat history is stored in Streamlit session state and resets when the session is refreshed.
--The first run downloads the SentenceTransformer embedding model.
--LLM responses depend on the quality of the retrieved context.
+-AI chat requires a valid Groq API key. \n
+-Semantic retrieval requires a configured Pinecone index. \n
+-Retrieval quality depends on the quality and structure of the generated analytical documents. \n
+-Edge-case facts may be missed when the relevant information is not present in the retrieved context. \n
+-Uploaded CSV files must contain the required logistics columns. \n
+-Chat history is stored in Streamlit session state and resets when the session is refreshed. \n
+-The first run downloads the SentenceTransformer embedding model. \n
+-LLM responses depend on the quality of the retrieved context. \n
 -RAGAS scores depend on the quality and representativeness of the evaluation dataset.
